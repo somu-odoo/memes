@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="action_github_data" model="ir.actions.act_window">
+        <field name="name">GitHub Data</field>
+        <field name="res_model">github.data</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <record id="view_github_data_form" model="ir.ui.view">
+        <field name="name">github.data.form</field>
+        <field name="model">github.data</field>
+        <field name="arch" type="xml">
+            <form string="GitHub Data">
+                <sheet>
+                    <group>
+                        <field name="employee_id"/>
+                        <field name="name"/>
+                        <field name="pull_request_id"/>
+                        <field name="commit_count"/>
+                        <button name="action_view_comments"
+                        type="object" string="View Comments"
+                        class="oe_stat_button" icon="fa-comments"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_github_data_tree" model="ir.ui.view">
+        <field name="name">github.data.tree</field>
+        <field name="model">github.data</field>
+        <field name="arch" type="xml">
+            <tree string="GitHub Data" >
+                <field name="pr_user_name"/>
+                <field name="name"/>
+                <field name="pull_request_id"/>
+                <field name="commit_count"/> 
+                <!-- <field name="comments"/> -->
+            </tree>
+        </field>
+    </record>
+</odoo>

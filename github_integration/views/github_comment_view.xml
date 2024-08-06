@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<odoo>
+
+    <record id="action_github_comment" model="ir.actions.act_window">
+        <field name="name">GitHub Comments</field>
+        <field name="res_model">github.comment</field>
+        <field name="view_mode">form,tree</field>
+    </record>
+    <record id="view_github_comment_tree" model="ir.ui.view">
+        <field name="name">github.comment.tree</field>
+        <field name="model">github.comment</field>
+        <field name="arch" type="xml">
+            <tree string="GitHub Comments" edit="false" decoration-success="sentiment in ['positive']" decoration-warning="sentiment in ['negative']">
+                <field name="name" string="Comment"/>
+                <field name="comment_date" string="Creation Date"/>
+                <field name="author"/>
+                <field name="sentiment" string="Sentiment"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_github_comment_form" model="ir.ui.view">
+        <field name="name">github.comment.form</field>
+        <field name="model">github.comment</field>
+        <field name="arch" type="xml">
+            <form string="GitHub Comment">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="comment_date"/>
+                        <field name="author"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pr_res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.github</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="hr.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='work_organization_setting_container']" position="inside">
+                <setting>
+                    <label for="token_id" string="Token" class="col-2 o_light_label"/>
+                    <field name="token_id"/>
+                    <p>input your token Id to access PRs</p>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>
