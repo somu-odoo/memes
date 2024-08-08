@@ -3,6 +3,7 @@ from odoo import models, fields, api
 import logging
 from dateutil import parser
 from datetime import datetime
+import json
 from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ class GitHubData(models.Model):
     comment_count = fields.Integer(string='Number of Comments')
     pr_user_name = fields.Char(string="Employee Name")
     create_date = fields.Datetime(string="Created at")
+    comment_url = fields.Char(string="Comment url")
     update_date = fields.Datetime(string="Updated at")
     close_date = fields.Datetime(string="Closed at")
     merged_date = fields.Datetime(string="Merged at")
@@ -28,7 +30,11 @@ class GitHubData(models.Model):
                   ], copy=False, default='open'
     )
     body = fields.Text(string="Body")
+    added_lines = fields.Char(string="Lines added")
+    deleted_lines = fields.Char(string="Lines deleted")
+    changed_files = fields.Char(string="changed files")
 
+    
     def _get_token(self):
         config_setting = self.env['res.config.settings'].search([], limit=1)
         return config_setting.token_id if config_setting else None
@@ -68,6 +74,7 @@ class GitHubData(models.Model):
                             'github_comment_id': comment_id,
                             'author': comment_author,
                             'comment_date': comment_date,
+                            
                         })
 
     def _fetch_pull_requests(self, token_id):
@@ -121,11 +128,16 @@ class GitHubData(models.Model):
                                 
                                 draft = pr_details.get('draft')
                                 state = pr_details.get('state')
+                                additions = pr_details.get('additions', 0)
+                                deletions = pr_details.get('deletions', 0)
+                                changed_files = pr_details.get('changed_files', 0)
                                 
                                 if draft and state == 'open':
                                     state = 'draft'
                                 
                                 pr_body = pr_details.get('body')
+                                pr_diff_url = pr.get("pull_request").get('diff_url')
+                                self.fetch_pull_code_difference(pr_diff_url)
                                 if pr_comments_response.status_code == 200:
                                     comments_data = pr_comments_response.json()
                                     pr_comment_count = len(comments_data)
@@ -138,6 +150,9 @@ class GitHubData(models.Model):
                                             'merged_date': merged_date,
                                             'state': state,
                                             'body': pr_body,
+                                            'added_lines': additions,
+                                            'deleted lines': deletions,
+                                            'changed_files': changed_files,
                                         })
                                     else:
                                         existing_pr = self.env['github.data'].create({
@@ -151,10 +166,14 @@ class GitHubData(models.Model):
                                             'merged_date': merged_date,
                                             'state': state,
                                             'body': pr_body,
+                                            'comment_url': comments_url,
+                                            'added_lines': additions,
+                                            'deleted_lines': deletions,
+                                            'changed_files': changed_files,
                                         })
                                     # print(existing_pr)
                                     
-                                    self._fetch_comments(comments_data, pr_user_name, existing_pr.id)
+                                    # self._fetch_comments(comments_data, pr_user_name, existing_pr.id)
                                 else:
                                     _logger.error("Error fetching comments: %s", pr_comments_response.content.decode())
                             else:
@@ -172,5 +191,36 @@ class GitHubData(models.Model):
         else:
             raise UserError('No token_id found in the configuration settings')
     
+    def action_fetch_comment(self):
+        print(self.comment_url)
+        token_id = self._get_token()
+        headers = {'Authorization': f'token {token_id}'}
+        pr_comments_response = requests.get(self.comment_url, headers=headers)
+        if pr_comments_response.status_code == 200:
+            comments_data = pr_comments_response.json()
+            self._fetch_comments(comments_data, self.pr_user_name, self.id)
+        else:
+            _logger.error("Error fetching comments: %s", pr_comments_response.content.decode())
+
+    def fetch_pull_code_difference(self,pr_diff_url):
+        token_id = self._get_token()
+        headers = {'Authorization': f'token {token_id}'}
+        pr_diff_resp = requests.get(pr_diff_url, headers=headers)
+        if pr_diff_resp.status_code == 200:
+            try:
+                # Attempt to decode the response as JSON
+                json_data = pr_diff_resp.json()
+                # Pretty print the JSON data
+                print("=== Pull Request Code Difference (JSON) ===")
+                print(json.dumps(json_data, indent=4))
+                print("===========================================")
+            except ValueError:
+                # Handle the case where the response is not valid JSON
+                print("The response is not valid JSON. Here's the raw response:")
+                print(pr_diff_resp.text)
+        else:
+            _logger.error("Error fetching the diff: %s", pr_diff_resp.content.decode())
+        breakpoint()
+
     def action_fetch_pr(self):
         self.fetch_pull_requests()

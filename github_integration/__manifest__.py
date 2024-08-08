@@ -1,12 +1,13 @@
 {
     'name': 'Pull Request Stats',
     'version': '1.0',
-    'category': 'Tools',
+    'category': 'github_pull_requests',
     'summary': 'Fetch and display GitHub data',
     'description': """Fetch and display GitHub data like pull requests, commits, and comments on employee profiles""",
     'author': 'Sourabh Parihar',
     'depends': ['base', 'hr'],
     'data': [
+        'security/security.xml',
         'security/ir.model.access.csv',
         'views/res_config_settings_view.xml',
         'views/github_comment_view.xml',

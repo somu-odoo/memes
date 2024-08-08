@@ -11,7 +11,6 @@ class GitHubComment(models.Model):
     github_comment_id = fields.Char(string='GitHub Comment ID')
     pull_request_id = fields.Many2one('github.data', string='Pull Request')
     author = fields.Char(string="Comment Author")
-    commit_sha = fields.Char(string='Commit SHA') 
     sentiment = fields.Selection([
         ('positive', 'Positive'),
         ('neutral', 'Neutral'),

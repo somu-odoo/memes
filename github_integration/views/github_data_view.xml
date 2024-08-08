@@ -5,6 +5,16 @@
         <field name="res_model">github.data</field>
         <field name="view_mode">tree,form</field>
     </record>
+
+    <record id="action_fetch_pull_requests" model="ir.actions.server">
+        <field name="name">Fetch Pull Requests</field>
+        <field name="model_id" ref="github_integration.model_github_data"/>
+        <field name="binding_model_id" ref="github_integration.model_github_data"/>
+        <field name="binding_view_types">form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_fetch_pr()</field>
+    </record>
+    
     <record id="view_github_data_form" model="ir.ui.view">
         <field name="name">github.data.form</field>
         <field name="model">github.data</field>
@@ -14,6 +24,11 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft, open, closed"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_fetch_comment"
+                        type="object" string="fetch Comments"
+                        class="oe_stat_button" icon="fa-comments"/>
+                    </div>
                     <h1 style="width:200px">
                         <field name="pr_user_name"/>
                     </h1>
@@ -22,12 +37,15 @@
                             <field name="name"/>
                             <field name="pull_request_id"/>
                             <field name="comment_count"/>
+                            <field name="added_lines"/>
+                            <field name="deleted_lines"/>
                         </group>
                         <group>
                             <field name="create_date"/>
                             <field name="update_date"/>
                             <field name="close_date"/>
                             <field name="merged_date"/>
+                            <field name="changed_files"/>
                         </group>
                     </group>
                     <notebook>

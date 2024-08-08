@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <odoo>
-    <menuitem id="github_data_menu_action" name="GitHub Data" action="action_github_data" />
+    <menuitem id="github_data_menu_action" name="GitHub Data" action="action_github_data">
+        <menuitem id="github_fetch_action" name="Fetch Pull Requests" action="action_fetch_pull_requests" />
+    </menuitem>
 </odoo>
 
