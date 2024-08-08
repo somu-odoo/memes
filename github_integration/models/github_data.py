@@ -7,6 +7,7 @@ import json
 from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
+
 class GitHubData(models.Model):
     _name = 'github.data'
     _description = 'GitHub Data'
@@ -34,7 +35,6 @@ class GitHubData(models.Model):
     deleted_lines = fields.Char(string="Lines deleted")
     changed_files = fields.Char(string="changed files")
 
-    
     def _get_token(self):
         config_setting = self.env['res.config.settings'].search([], limit=1)
         return config_setting.token_id if config_setting else None
@@ -45,37 +45,36 @@ class GitHubData(models.Model):
         return dt
 
     def _fetch_comments(self, comments_data, pr_user_name, pr_id):
-            for comment in comments_data:
-                comment_id = comment.get('id')
-                comment_body = comment.get('body', 'No Comment')
-                comment_author = comment['user']['login'] if 'user' in comment else 'Unknown'
-                comment_date = comment.get('created_at')
+        for comment in comments_data:
+            comment_id = comment.get('id')
+            comment_body = comment.get('body', 'No Comment')
+            comment_author = comment['user']['login'] if 'user' in comment else 'Unknown'
+            comment_date = comment.get('created_at')
 
-                if comment_date:
-                    comment_date = parser.isoparse(comment_date)  
-                    comment_date = self._convert_to_naive(comment_date)
+            if comment_date:
+                comment_date = parser.isoparse(comment_date)
+                comment_date = self._convert_to_naive(comment_date)
 
-                if comment_author != "robodoo" and comment_author != pr_user_name :
-                    existing_comment = self.env['github.comment'].search([
-                        ('github_comment_id', '=', comment_id),
-                        ('pull_request_id', '=', pr_id)
-                    ], limit=1)
+            if comment_author != "robodoo" and comment_author != pr_user_name:
+                existing_comment = self.env['github.comment'].search([
+                    ('github_comment_id', '=', comment_id),
+                    ('pull_request_id', '=', pr_id)
+                ], limit=1)
 
-                    if existing_comment:
-                        existing_comment.write({
-                            'name': comment_body,
-                            'author': comment_author,
-                            'comment_date': comment_date,
-                        })
-                    else:
-                        self.env['github.comment'].create({
-                            'name': comment_body,
-                            'pull_request_id': pr_id,
-                            'github_comment_id': comment_id,
-                            'author': comment_author,
-                            'comment_date': comment_date,
-                            
-                        })
+                if existing_comment:
+                    existing_comment.write({
+                        'name': comment_body,
+                        'author': comment_author,
+                        'comment_date': comment_date,
+                    })
+                else:
+                    self.env['github.comment'].create({
+                        'name': comment_body,
+                        'pull_request_id': pr_id,
+                        'github_comment_id': comment_id,
+                        'author': comment_author,
+                        'comment_date': comment_date,
+                    })
 
     def _fetch_pull_requests(self, token_id):
         pr_employees = self.env['hr.employee'].search([
@@ -109,32 +108,32 @@ class GitHubData(models.Model):
                                 if create_date:
                                     create_date = parser.isoparse(create_date)  
                                     create_date = self._convert_to_naive(create_date)
-                                    
+
                                 update_date = pr_details.get('updated_at')
                                 if update_date:
                                     update_date = parser.isoparse(update_date)  
                                     update_date = self._convert_to_naive(update_date)
-                                    
+
                                 close_date = pr_details.get('closed_at')
                                 if close_date:
                                     close_date = parser.isoparse(close_date)  
                                     close_date = self._convert_to_naive(close_date)
-                                
+
                                 pr_details_m = pr_details.get('pull_request')    
                                 merged_date = pr_details_m.get('merged_at')
                                 if merged_date:
                                     merged_date = parser.isoparse(merged_date)  
                                     merged_date = self._convert_to_naive(merged_date)
-                                
+
                                 draft = pr_details.get('draft')
                                 state = pr_details.get('state')
                                 additions = pr_details.get('additions', 0)
                                 deletions = pr_details.get('deletions', 0)
                                 changed_files = pr_details.get('changed_files', 0)
-                                
+
                                 if draft and state == 'open':
                                     state = 'draft'
-                                
+
                                 pr_body = pr_details.get('body')
                                 pr_diff_url = pr.get("pull_request").get('diff_url')
                                 self.fetch_pull_code_difference(pr_diff_url)
@@ -171,9 +170,6 @@ class GitHubData(models.Model):
                                             'deleted_lines': deletions,
                                             'changed_files': changed_files,
                                         })
-                                    # print(existing_pr)
-                                    
-                                    # self._fetch_comments(comments_data, pr_user_name, existing_pr.id)
                                 else:
                                     _logger.error("Error fetching comments: %s", pr_comments_response.content.decode())
                             else:
@@ -181,7 +177,7 @@ class GitHubData(models.Model):
                 else:
                     _logger.error("Error fetching pull requests: %s", response.content.decode())
             else:
-                    print("no employees")
+                print("no employees")
 
     @api.model
     def fetch_pull_requests(self):
@@ -190,9 +186,8 @@ class GitHubData(models.Model):
             self._fetch_pull_requests(token_id)
         else:
             raise UserError('No token_id found in the configuration settings')
-    
+
     def action_fetch_comment(self):
-        print(self.comment_url)
         token_id = self._get_token()
         headers = {'Authorization': f'token {token_id}'}
         pr_comments_response = requests.get(self.comment_url, headers=headers)
@@ -202,7 +197,7 @@ class GitHubData(models.Model):
         else:
             _logger.error("Error fetching comments: %s", pr_comments_response.content.decode())
 
-    def fetch_pull_code_difference(self,pr_diff_url):
+    def fetch_pull_code_difference(self, pr_diff_url):
         token_id = self._get_token()
         headers = {'Authorization': f'token {token_id}'}
         pr_diff_resp = requests.get(pr_diff_url, headers=headers)
