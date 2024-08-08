@@ -10,16 +10,34 @@
         <field name="model">github.data</field>
         <field name="arch" type="xml">
             <form string="GitHub Data">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft, open, closed"/>
+                </header>
                 <sheet>
+                    <h1 style="width:200px">
+                        <field name="pr_user_name"/>
+                    </h1>
                     <group>
-                        <field name="employee_id"/>
-                        <field name="name"/>
-                        <field name="pull_request_id"/>
-                        <field name="commit_count"/>
-                        <button name="action_view_comments"
-                        type="object" string="View Comments"
-                        class="oe_stat_button" icon="fa-comments"/>
+                        <group>
+                            <field name="name"/>
+                            <field name="pull_request_id"/>
+                            <field name="comment_count"/>
+                        </group>
+                        <group>
+                            <field name="create_date"/>
+                            <field name="update_date"/>
+                            <field name="close_date"/>
+                            <field name="merged_date"/>
+                        </group>
                     </group>
+                    <notebook>
+                        <page string="Description">
+                                <field name="body"/>
+                        </page>
+                        <page string="Comments">
+                                <field name="comment_id"/>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
@@ -29,10 +47,15 @@
         <field name="model">github.data</field>
         <field name="arch" type="xml">
             <tree string="GitHub Data" >
+                <header>
+                    <button name="action_fetch_pr"
+                    type="object" string="fetch pr"
+                    class="oe_stat_button" icon="fa-comments"/>
+                </header>
                 <field name="pr_user_name"/>
                 <field name="name"/>
                 <field name="pull_request_id"/>
-                <field name="commit_count"/> 
+                <field name="comment_count"/> 
                 <!-- <field name="comments"/> -->
             </tree>
         </field>

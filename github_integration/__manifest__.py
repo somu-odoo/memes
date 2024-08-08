@@ -9,7 +9,6 @@
     'data': [
         'security/ir.model.access.csv',
         'views/res_config_settings_view.xml',
-        'views/pull_request_employee_view.xml',
         'views/github_comment_view.xml',
         'views/hr_employee_view.xml',
         'views/github_data_view.xml',

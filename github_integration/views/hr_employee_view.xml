@@ -8,22 +8,8 @@
             <xpath expr="//sheet/group" position="inside">
                 <group>
                     <field name="github_url"/>
-                    <field name="employee_assessment" readonly="1"/>
+                    <field name="pr_bool"/>
                 </group>
-            </xpath>
-            <xpath expr="//form/sheet/notebook" position="inside">
-                <page string="GitHub Data">
-                    <field name="github_data_ids">
-                        <tree>
-                            <field name="name"/>
-                            <field name="pull_request_id"/>
-                            <field name="commit_count"/>
-                            <button name="action_view_comments"
-                            type="object" string="View Comments"
-                            class="oe_stat_button" icon="fa-comments"/>
-                        </tree>
-                    </field>
-                </page>
             </xpath>
         </field>
     </record>
