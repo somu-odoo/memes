@@ -18,7 +18,7 @@ class GitHubData(models.Model):
     comment_count = fields.Integer(string='Number of Comments')
     pr_user_name = fields.Char(string="Employee Name")
     create_date = fields.Datetime(string="Created at")
-    comment_url = fields.Char(string="Comment url")
+    comments_url = fields.Char(string="Comments url")
     update_date = fields.Datetime(string="Updated at")
     close_date = fields.Datetime(string="Closed at")
     merged_date = fields.Datetime(string="Merged at")
@@ -106,23 +106,23 @@ class GitHubData(models.Model):
                                 pr_comments_response = requests.get(comments_url, headers=headers)
                                 create_date = pr_details.get('created_at')
                                 if create_date:
-                                    create_date = parser.isoparse(create_date)  
+                                    create_date = parser.isoparse(create_date)
                                     create_date = self._convert_to_naive(create_date)
 
                                 update_date = pr_details.get('updated_at')
                                 if update_date:
-                                    update_date = parser.isoparse(update_date)  
+                                    update_date = parser.isoparse(update_date)
                                     update_date = self._convert_to_naive(update_date)
 
                                 close_date = pr_details.get('closed_at')
                                 if close_date:
-                                    close_date = parser.isoparse(close_date)  
+                                    close_date = parser.isoparse(close_date)
                                     close_date = self._convert_to_naive(close_date)
 
-                                pr_details_m = pr_details.get('pull_request')    
+                                pr_details_m = pr_details.get('pull_request')
                                 merged_date = pr_details_m.get('merged_at')
                                 if merged_date:
-                                    merged_date = parser.isoparse(merged_date)  
+                                    merged_date = parser.isoparse(merged_date)
                                     merged_date = self._convert_to_naive(merged_date)
 
                                 draft = pr_details.get('draft')
@@ -135,11 +135,12 @@ class GitHubData(models.Model):
                                     state = 'draft'
 
                                 pr_body = pr_details.get('body')
-                                pr_diff_url = pr.get("pull_request").get('diff_url')
-                                self.fetch_pull_code_difference(pr_diff_url)
+                                pr_files_url = pr_details['pull_request']['url'] + '/files'
+                                self.fetch_pull_code_difference(pr_files_url)
                                 if pr_comments_response.status_code == 200:
                                     comments_data = pr_comments_response.json()
                                     pr_comment_count = len(comments_data)
+                                    self._fetch_comments(comments_data, pr_user_name, pr['id'])
 
                                     if existing_pr:
                                         existing_pr.write({
@@ -165,7 +166,7 @@ class GitHubData(models.Model):
                                             'merged_date': merged_date,
                                             'state': state,
                                             'body': pr_body,
-                                            'comment_url': comments_url,
+                                            'comments_url': comments_url,
                                             'added_lines': additions,
                                             'deleted_lines': deletions,
                                             'changed_files': changed_files,
@@ -190,32 +191,18 @@ class GitHubData(models.Model):
     def action_fetch_comment(self):
         token_id = self._get_token()
         headers = {'Authorization': f'token {token_id}'}
-        pr_comments_response = requests.get(self.comment_url, headers=headers)
+        pr_comments_response = requests.get(self.comments_url, headers=headers)
         if pr_comments_response.status_code == 200:
             comments_data = pr_comments_response.json()
             self._fetch_comments(comments_data, self.pr_user_name, self.id)
         else:
             _logger.error("Error fetching comments: %s", pr_comments_response.content.decode())
 
-    def fetch_pull_code_difference(self, pr_diff_url):
+    def fetch_pull_code_difference(self, pr_files_url):
         token_id = self._get_token()
         headers = {'Authorization': f'token {token_id}'}
-        pr_diff_resp = requests.get(pr_diff_url, headers=headers)
-        if pr_diff_resp.status_code == 200:
-            try:
-                # Attempt to decode the response as JSON
-                json_data = pr_diff_resp.json()
-                # Pretty print the JSON data
-                print("=== Pull Request Code Difference (JSON) ===")
-                print(json.dumps(json_data, indent=4))
-                print("===========================================")
-            except ValueError:
-                # Handle the case where the response is not valid JSON
-                print("The response is not valid JSON. Here's the raw response:")
-                print(pr_diff_resp.text)
-        else:
-            _logger.error("Error fetching the diff: %s", pr_diff_resp.content.decode())
-        breakpoint()
+        response = requests.get(pr_files_url, headers=headers)
+
 
     def action_fetch_pr(self):
         self.fetch_pull_requests()
