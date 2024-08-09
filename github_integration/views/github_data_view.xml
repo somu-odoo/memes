@@ -15,6 +15,20 @@
         <field name="code">action = model.action_fetch_pr()</field>
     </record>
     
+    <record id="ir_cron_fetch_github_pull_requests" model="ir.cron">
+        <field name="name">Fetch GitHub Pull Requests</field>
+        <field name="model_id" ref="model_github_data"/>
+        <field name="state">code</field>
+        <field name="code">model.fetch_pull_requests()</field>
+        <field name="user_id" ref="base.user_root"/> 
+        <field name="interval_type">days</field>
+        <field name="interval_number">1</field>
+        <field name="numbercall">-1</field> 
+        <field name="doall" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="nextcall" eval="(DateTime.now().replace(hour=14, minute=30, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
     <record id="view_github_data_form" model="ir.ui.view">
         <field name="name">github.data.form</field>
         <field name="model">github.data</field>
@@ -74,7 +88,6 @@
                 <field name="name"/>
                 <field name="pull_request_id"/>
                 <field name="comment_count"/> 
-                <!-- <field name="comments"/> -->
             </tree>
         </field>
     </record>

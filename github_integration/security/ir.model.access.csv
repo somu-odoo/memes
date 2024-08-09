@@ -4,3 +4,6 @@ access_github_comment_user,access_github_comment,model_github_comment,base.group
 
 access_github_data_user,access_github_data,model_github_data,github_integration.group_admin,1,1,1,1
 access_github_comment_user,access_github_comment,model_github_comment,github_integration.group_admin,1,1,1,1
+
+access_github_data_user,access_github_data,model_github_data,base.group_system,1,1,1,1
+access_github_comment_user,access_github_comment,model_github_comment,base.group_system,1,1,1,1

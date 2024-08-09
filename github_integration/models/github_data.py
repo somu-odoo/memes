@@ -45,6 +45,31 @@ class GitHubData(models.Model):
             return dt.replace(tzinfo=None)
         return dt
 
+    def fetch_dates(self,pr_details):
+        create_date = pr_details.get('created_at')
+        if create_date:
+            create_date = parser.isoparse(create_date)
+            create_date = self._convert_to_naive(create_date)
+
+        update_date = pr_details.get('updated_at')
+        if update_date:
+            update_date = parser.isoparse(update_date)
+            update_date = self._convert_to_naive(update_date)
+
+        close_date = pr_details.get('closed_at')
+        if close_date:
+            close_date = parser.isoparse(close_date)
+            close_date = self._convert_to_naive(close_date)
+
+        pr_details_m = pr_details.get('pull_request')
+        merged_date = pr_details_m.get('merged_at')
+        if merged_date:
+            merged_date = parser.isoparse(merged_date)
+            merged_date = self._convert_to_naive(merged_date)
+            
+        return [create_date, update_date, close_date, merged_date]
+
+
     def _fetch_comments(self, comments_data, pr_user_name, pr_id):
         for comment in comments_data:
             comment_id = comment.get('id')
@@ -105,26 +130,7 @@ class GitHubData(models.Model):
                                 pr_user_name = pr_details['user']['login']
                                 comments_url = pr_details['pull_request']['url'] + '/comments'
                                 pr_comments_response = requests.get(comments_url, headers=headers)
-                                create_date = pr_details.get('created_at')
-                                if create_date:
-                                    create_date = parser.isoparse(create_date)
-                                    create_date = self._convert_to_naive(create_date)
-
-                                update_date = pr_details.get('updated_at')
-                                if update_date:
-                                    update_date = parser.isoparse(update_date)
-                                    update_date = self._convert_to_naive(update_date)
-
-                                close_date = pr_details.get('closed_at')
-                                if close_date:
-                                    close_date = parser.isoparse(close_date)
-                                    close_date = self._convert_to_naive(close_date)
-
-                                pr_details_m = pr_details.get('pull_request')
-                                merged_date = pr_details_m.get('merged_at')
-                                if merged_date:
-                                    merged_date = parser.isoparse(merged_date)
-                                    merged_date = self._convert_to_naive(merged_date)
+                                dates = self.fetch_dates(pr_details)
 
                                 draft = pr_details.get('draft')
                                 state = pr_details.get('state')
@@ -141,9 +147,9 @@ class GitHubData(models.Model):
                                     if existing_pr:
                                         existing_pr.write({
                                             'name': pr_title,
-                                            'update_date': update_date,
-                                            'close_date': close_date,
-                                            'merged_date': merged_date,
+                                            'update_date': dates[1],
+                                            'close_date': dates[2],
+                                            'merged_date': dates[3],
                                             'state': state,
                                             'body': pr_body,
                                             'added_lines': changes[0],
@@ -156,10 +162,10 @@ class GitHubData(models.Model):
                                             'pull_request_id': pr['id'],
                                             'comment_count': pr_comment_count,
                                             'pr_user_name': pr_user_name,
-                                            'create_date': create_date,
-                                            'update_date': update_date,
-                                            'close_date': close_date,
-                                            'merged_date': merged_date,
+                                            'create_date': dates[0],
+                                            'update_date': dates[1],
+                                            'close_date': dates[2],
+                                            'merged_date': dates[3],
                                             'state': state,
                                             'body': pr_body,
                                             'comments_url': comments_url,
