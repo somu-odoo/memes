@@ -8,7 +8,7 @@
             <xpath expr="//sheet/group" position="inside">
                 <group>
                     <field name="github_url"/>
-                    <field name="pr_bool"/>
+                    <field name="allow_fetch_pr"/>
                 </group>
             </xpath>
         </field>

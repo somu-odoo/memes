@@ -12,7 +12,7 @@
         <field name="binding_model_id" ref="github_integration.model_github_data"/>
         <field name="binding_view_types">form</field>
         <field name="state">code</field>
-        <field name="code">action = records.action_fetch_pr()</field>
+        <field name="code">action = model.action_fetch_pr()</field>
     </record>
     
     <record id="view_github_data_form" model="ir.ui.view">
