@@ -54,7 +54,10 @@ class GitHubData(models.Model):
             if comment_date:
                 comment_date = parser.isoparse(comment_date)
                 comment_date = self._convert_to_naive(comment_date)
-
+                print(pr_id)
+                print("yes.....................................")
+                print(self.id)
+                # breakpoint()
             if comment_author != "robodoo" and comment_author != pr_user_name:
                 existing_comment = self.env['github.comment'].search([
                     ('github_comment_id', '=', comment_id),
@@ -127,21 +130,19 @@ class GitHubData(models.Model):
 
                                 draft = pr_details.get('draft')
                                 state = pr_details.get('state')
-                                additions = pr_details.get('additions', 0)
-                                deletions = pr_details.get('deletions', 0)
-                                changed_files = pr_details.get('changed_files', 0)
 
                                 if draft and state == 'open':
                                     state = 'draft'
 
                                 pr_body = pr_details.get('body')
                                 pr_files_url = pr_details['pull_request']['url'] + '/files'
-                                self.fetch_pull_code_difference(pr_files_url)
+                                print("yes.....................................code diff")
+                                changes = self.fetch_pull_code_difference(pr_files_url)
+                                print("yes.....................................commentfetch")
                                 if pr_comments_response.status_code == 200:
                                     comments_data = pr_comments_response.json()
                                     pr_comment_count = len(comments_data)
-                                    self._fetch_comments(comments_data, pr_user_name, pr['id'])
-
+                                    
                                     if existing_pr:
                                         existing_pr.write({
                                             'name': pr_title,
@@ -150,9 +151,9 @@ class GitHubData(models.Model):
                                             'merged_date': merged_date,
                                             'state': state,
                                             'body': pr_body,
-                                            'added_lines': additions,
-                                            'deleted lines': deletions,
-                                            'changed_files': changed_files,
+                                            'added_lines': changes[0],
+                                            'deleted_lines': changes[1],
+                                            # 'changed_files': changed_files,
                                         })
                                     else:
                                         existing_pr = self.env['github.data'].create({
@@ -167,10 +168,11 @@ class GitHubData(models.Model):
                                             'state': state,
                                             'body': pr_body,
                                             'comments_url': comments_url,
-                                            'added_lines': additions,
-                                            'deleted_lines': deletions,
-                                            'changed_files': changed_files,
+                                            'added_lines': changes[0],
+                                            'deleted_lines': changes[1],
+                                            # 'changed_files': changed_files,
                                         })
+                                        self._fetch_comments(comments_data, pr_user_name, existing_pr.id)
                                 else:
                                     _logger.error("Error fetching comments: %s", pr_comments_response.content.decode())
                             else:
@@ -199,9 +201,27 @@ class GitHubData(models.Model):
             _logger.error("Error fetching comments: %s", pr_comments_response.content.decode())
 
     def fetch_pull_code_difference(self, pr_files_url):
+        added = 0
+        deleted = 0
         token_id = self._get_token()
         headers = {'Authorization': f'token {token_id}'}
         response = requests.get(pr_files_url, headers=headers)
+        
+        if response.status_code == 200:
+            try:
+                changes = response.json()
+                for change in changes:
+                    added += change.get('additions', 0)
+                    print(added)
+                    deleted += change.get('deletions', 0)
+                    print(deleted)
+            except ValueError:
+                _logger.error("Error decoding JSON response: %s", response.text)
+        else:
+            _logger.error("Error fetching pull request file changes: %s", response.content.decode())
+        
+        return [added, deleted]
+
 
 
     def action_fetch_pr(self):
