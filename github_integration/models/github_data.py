@@ -1,10 +1,10 @@
-import requests
-from odoo import models, fields, api
-import logging
 from dateutil import parser
 from datetime import datetime
-import json
+from odoo import api, fields, models
 from odoo.exceptions import UserError
+import json
+import logging
+import requests
 _logger = logging.getLogger(__name__)
 
 
@@ -36,8 +36,11 @@ class GitHubData(models.Model):
     changed_files = fields.Char(string="changed files")
 
     def _get_token(self):
-        config_setting = self.env['res.config.settings'].search([], limit=1)
-        return config_setting.token_id if config_setting else None
+        token_id = self.env['ir.config_parameter'].sudo().get_param('github_integration.github_api_key')
+        if token_id:
+            return token_id
+        else:
+            raise UserError("Enter a Github API key")
 
     def _convert_to_naive(self, dt):
         if dt.tzinfo is not None:
@@ -54,10 +57,7 @@ class GitHubData(models.Model):
             if comment_date:
                 comment_date = parser.isoparse(comment_date)
                 comment_date = self._convert_to_naive(comment_date)
-                print(pr_id)
-                print("yes.....................................")
-                print(self.id)
-                # breakpoint()
+
             if comment_author != "robodoo" and comment_author != pr_user_name:
                 existing_comment = self.env['github.comment'].search([
                     ('github_comment_id', '=', comment_id),
@@ -136,13 +136,11 @@ class GitHubData(models.Model):
 
                                 pr_body = pr_details.get('body')
                                 pr_files_url = pr_details['pull_request']['url'] + '/files'
-                                print("yes.....................................code diff")
                                 changes = self.fetch_pull_code_difference(pr_files_url)
-                                print("yes.....................................commentfetch")
+                                breakpoint()
                                 if pr_comments_response.status_code == 200:
                                     comments_data = pr_comments_response.json()
                                     pr_comment_count = len(comments_data)
-                                    
                                     if existing_pr:
                                         existing_pr.write({
                                             'name': pr_title,
@@ -172,7 +170,7 @@ class GitHubData(models.Model):
                                             'deleted_lines': changes[1],
                                             # 'changed_files': changed_files,
                                         })
-                                        self._fetch_comments(comments_data, pr_user_name, existing_pr.id)
+                                        self._fetch_comments(comments_data, existing_pr.pr_user_name, existing_pr.id)
                                 else:
                                     _logger.error("Error fetching comments: %s", pr_comments_response.content.decode())
                             else:
@@ -181,6 +179,14 @@ class GitHubData(models.Model):
                     _logger.error("Error fetching pull requests: %s", response.content.decode())
             else:
                 print("no employees")
+
+    def _fetch_user_data(self, token_id):
+        headers = {'Authorization': f'token {token_id}'}
+        response = requests.get("https://api.github.com/user", headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            _logger.error("Error fetching user data: %s", response.content.decode())
 
     @api.model
     def fetch_pull_requests(self):
@@ -206,23 +212,18 @@ class GitHubData(models.Model):
         token_id = self._get_token()
         headers = {'Authorization': f'token {token_id}'}
         response = requests.get(pr_files_url, headers=headers)
-        
         if response.status_code == 200:
             try:
                 changes = response.json()
                 for change in changes:
                     added += change.get('additions', 0)
-                    print(added)
                     deleted += change.get('deletions', 0)
-                    print(deleted)
             except ValueError:
                 _logger.error("Error decoding JSON response: %s", response.text)
         else:
             _logger.error("Error fetching pull request file changes: %s", response.content.decode())
-        
         return [added, deleted]
 
-
-
     def action_fetch_pr(self):
-        self.fetch_pull_requests()
+        token_id = self._get_token()
+        self._fetch_pull_requests(token_id)

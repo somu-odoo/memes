@@ -1,5 +1,5 @@
+from odoo import api, fields, models
 from textblob import TextBlob
-from odoo import models, fields, api
 
 
 class GitHubComment(models.Model):

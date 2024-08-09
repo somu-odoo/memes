@@ -5,11 +5,10 @@
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="hr.res_config_settings_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//block[@name='work_organization_setting_container']" position="inside">
-                <setting>
-                    <label for="token_id" string="Token" class="col-2 o_light_label"/>
-                    <field name="token_id"/>
-                    <p>input your token Id to access PRs</p>
+            <xpath expr="//block[@name='integration']" position="inside">
+                <setting id="github_api_key" string="Github API Key" help="Add a Github API key to enable fetch PRs">
+                    <field name="github_api_key" placeholder="Paste your API key"/>
+                    <button type="object" name="action_check_api_key" string="Test Connection" icon="oi-arrow-right" class="btn-link" invisible="not github_api_key"/>           
                 </setting>
             </xpath>
         </field>
