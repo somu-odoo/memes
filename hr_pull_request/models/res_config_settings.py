@@ -10,7 +10,7 @@ class InheritConfigSettings(models.TransientModel):
     def action_check_api_key(self):
         token_id = self.env['ir.config_parameter'].sudo().get_param('github_integration.github_api_key')
         if token_id:
-            user = self.env['github.data']._fetch_user_data(token_id)
+            user = self.env['hr.employee.pull.request']._fetch_user_data(token_id)
             if user:
                 message = "Connection Test Successful!"
                 return {

@@ -7,8 +7,9 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet/group" position="inside">
                 <group>
-                    <field name="github_url"/>
+                    <field name="github_user"/>
                     <field name="allow_fetch_pr"/>
+                    <field name="last_sync_date"/>
                 </group>
             </xpath>
         </field>

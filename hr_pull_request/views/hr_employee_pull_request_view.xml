@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="action_hr_employee_pull_request" model="ir.actions.act_window">
+        <field name="name">Pull Request</field>
+        <field name="res_model">hr.employee.pull.request</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_hr_employee_pull_request_form" model="ir.ui.view">
+        <field name="name">hr.employee.pull.request.form</field>
+        <field name="model">hr.employee.pull.request</field>
+        <field name="arch" type="xml">
+            <form string="Pull Requests">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft, open, closed"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="author"/>
+                            <field name="name"/>
+                            <field name="pull_request_id"/>
+                            <!-- <field name="added_lines"/>
+                            <field name="deleted_lines"/> -->
+                        </group>
+                        <group>
+                            <field name="date"/>
+                            <field name="updated_date"/>
+                            <field name="diff_url"/>
+                            <!-- <field name="closed_date"/>
+                            <field name="merged_date"/>
+                            <field name="changed_files"/> -->
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description">
+                                <field name="body"/>
+                        </page>
+                        <page string="Comments">
+                                <field name="comment_id"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_hr_employee_pull_request_tree" model="ir.ui.view">
+        <field name="name">hr.employee.pull.request.tree</field>
+        <field name="model">hr.employee.pull.request</field>
+        <field name="arch" type="xml">
+            <tree string="GitHub Data" >
+                <field name="author"/>
+                <field name="name"/>
+                <field name="pull_request_id"/>
+            </tree>
+        </field>
+    </record>
+
+
+    <menuitem 
+        id="menu_hr_employee_pull_request"
+        name="Pull Requests"
+        parent="hr.hr_menu_hr_reports"
+        action="action_hr_employee_pull_request"
+        sequence="100"/>
+</odoo>
