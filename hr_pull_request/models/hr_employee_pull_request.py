@@ -38,10 +38,11 @@ class EmployeePullRequest(models.Model):
     changed_files = fields.Char(string="changed files")
     diff_url = fields.Char(string="Diff URL")
     type_title_prefix = fields.Selection(string="Type",selection=[
-                   ('[IMP]', 'Implement'),
-                   ('[FIX]', 'Fix'),
+                   ('[IMP]', 'Improvise'),
+                   ('[FIX]', 'Bug Fix'),
                    ('[ADD]', 'Addition'),
-                   ('[REM]', 'Repair')
+                   ('[REM]', 'Remove'),
+                   ('[REF]', 'Refactor')
                   ], copy=False, compute='_compute_type_title_prefix')
     @api.depends('name')
     def _compute_type_title_prefix(self):
