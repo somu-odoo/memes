@@ -1,3 +1,4 @@
+import re
 from dateutil import parser
 from odoo import api, fields, models
 from odoo.exceptions import UserError
@@ -29,12 +30,27 @@ class EmployeePullRequest(models.Model):
                    ('closed', 'Closed')
                   ], copy=False, default='open'
     )
+    pr_url = fields.Char(string="Url for Update")
     files_url = fields.Char(string="Files URL")
     body = fields.Text(string="Body")
     added_lines = fields.Char(string="Lines added")
     deleted_lines = fields.Char(string="Lines deleted")
     changed_files = fields.Char(string="changed files")
     diff_url = fields.Char(string="Diff URL")
+    type_title_prefix = fields.Selection(string="Type",selection=[
+                   ('[IMP]', 'Implement'),
+                   ('[FIX]', 'Fix'),
+                   ('[ADD]', 'Addition'),
+                   ('[REM]', 'Repair')
+                  ], copy=False, compute='_compute_type_title_prefix')
+    @api.depends('name')
+    def _compute_type_title_prefix(self):
+        for record in self:
+            if record.name:
+                match = re.match(r'(\[.*?\])', record.name)
+                record.type_title_prefix = match.group(1) if match else ''
+            else:
+                record.type_title_prefix = ''
 
     def fetch_pull_code_difference(self, pr_files_url):
         added = 0
@@ -58,3 +74,5 @@ class EmployeePullRequest(models.Model):
 
         return [added, deleted]
         
+    def action_update_pr(self):
+        self.env['hr.employee'].fetch_and_update_pr(self.pr_url)

@@ -6,27 +6,56 @@
         <field name="view_mode">tree,form</field>
     </record>
 
+    <record id="ir_cron_fetch_github_pull_requests" model="ir.cron">
+        <field name="name">Fetch GitHub Pull Requests</field>
+        <field name="model_id" ref="hr.model_hr_employee"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_fetch_pr()</field>
+        <field name="user_id" ref="base.user_root"/> 
+        <field name="interval_type">days</field>
+        <field name="interval_number">1</field>
+        <field name="numbercall">-1</field> 
+        <field name="doall" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="nextcall" eval="(DateTime.now().replace(hour=14, minute=30, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
+    <record id="ir_cron_update_pr" model="ir.cron">
+        <field name="name">Update Pull Requests</field>
+        <field name="model_id" ref="hr.model_hr_employee"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_update_all()</field>
+        <field name="user_id" ref="base.user_root"/> 
+        <field name="interval_type">days</field>
+        <field name="interval_number">1</field>
+        <field name="numbercall">-1</field> 
+        <field name="doall" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="nextcall" eval="(DateTime.now().replace(hour=18, minute=30, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+    
+
     <record id="view_hr_employee_pull_request_form" model="ir.ui.view">
         <field name="name">hr.employee.pull.request.form</field>
         <field name="model">hr.employee.pull.request</field>
         <field name="arch" type="xml">
             <form string="Pull Requests">
                 <header>
+                    <button name="action_update_pr" type="object" string="Update PR"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft, open, closed"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="author"/>
                             <field name="name"/>
-                            <field name="pull_request_id"/>
+                            <field name="author"/>
                             <!-- <field name="added_lines"/>
                             <field name="deleted_lines"/> -->
                         </group>
                         <group>
-                            <field name="date"/>
-                            <field name="updated_date"/>
-                            <field name="diff_url"/>
+                            <field name="type_title_prefix"/>
+                            <field name="diff_url" widget="url"/>
+                            
                             <!-- <field name="closed_date"/>
                             <field name="merged_date"/>
                             <field name="changed_files"/> -->
@@ -38,6 +67,13 @@
                         </page>
                         <page string="Comments">
                                 <field name="comment_id"/>
+                        </page>
+                        <page string="Others">
+                            <group>
+                                <field name="pull_request_id"/>
+                                <field name="date"/>
+                                <field name="updated_date"/>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
@@ -51,7 +87,8 @@
             <tree string="GitHub Data" >
                 <field name="author"/>
                 <field name="name"/>
-                <field name="pull_request_id"/>
+                <field name="type_title_prefix"/>
+                <field name="state"/>
             </tree>
         </field>
     </record>

@@ -1,7 +1,8 @@
-from odoo import fields, models
+from odoo import fields, models, api
 from odoo.exceptions import UserError
 from dateutil import parser
 import requests
+from datetime import date
 
 def _convert_date(date_value):
     if not date_value:
@@ -18,7 +19,7 @@ class HREmployee(models.Model):
 
     allow_fetch_pr = fields.Boolean(string="Fetch Pull Request")
     github_user = fields.Char(string="Github Username")
-    last_sync_date = fields.Date(string="Last Synchronized date")
+    last_sync_date = fields.Date(string="Last Synchronized date",default=lambda self: date(2023, 1, 1))
     
     def _send_request_github(self, request_url):
         github_token_id = self.env['ir.config_parameter'].sudo().get_param('github_integration.github_api_key')
@@ -29,7 +30,7 @@ class HREmployee(models.Model):
         response = requests.get(request_url, headers=headers)
         if response.status_code != 200:
             return None
-        print(response.json())
+        # print(response.json())
         return response.json()
     
     def _prepare_pull_request_comments_values(self, comment):
@@ -54,15 +55,27 @@ class HREmployee(models.Model):
             'body': pr_details.get('body'),
             'comments_url': pr_details['pull_request']['url'] + '/comments',
             'files_url': pr_details['pull_request']['url'] + '/files',
-            'diff_url':pr_details.get('pull_request').get('diff_url')
+            'diff_url':pr_details.get('pull_request').get('diff_url'),
+            'pr_url': pr_details.get("url"),
             # 'added_lines': changes[0],
             # 'deleted_lines': changes[1],
             # 'changed_files': changed_files,
         }
         
+    def cron_fetch_pr(self):
+        employees = self.search([('allow_fetch_pr','!=',False),('github_user','!=',False)])
+        employees.action_fetch_pr()
+        
+    def cron_update_all(self):
+        print("cron....")
+        prs = self.env['hr.employee.pull.request'].search([])
+        for pr in prs:
+            print(pr)
+            self.fetch_and_update_pr(pr.pr_url)
+        
     
     def action_fetch_pr(self, with_comments=False):
-        
+        print("Cron job..............")
         url = f"https://api.github.com/search/issues"
         query_type = f"?q=type:pr"
         page_url = f"&per_page=100"
@@ -106,3 +119,25 @@ class HREmployee(models.Model):
                 comments_values.append(value)
         self.env['hr.employee.pull.request.comment'].create(comments_values)
         return 
+    
+    @api.model
+    def fetch_and_update_pr(self, pr_url):
+        pr_response = self._send_request_github(pr_url)
+        self.last_sync_date = fields.Date.today()
+        pr_data = pr_response.get('items', []) if pr_response else None
+        if not pr_data:
+            return
+        pull_request = self.search([('pull_request_id', '=', pr_data[id])])
+        update_values = {
+            'updated_date': self._convert_date(pr_data.get('updated_at')),
+            'closed_date': self._convert_date(pr_data.get('closed_at')),
+            'merged_date': self._convert_date(pr_data.get('merged_at')),
+            'state': 'open' if pr_data['state'] == 'open' else 'closed',
+            'body': pr_data['body'],
+            'comment_count': pr_data['comments'],
+            'added_lines': pr_data.get('additions', 0),
+            'deleted_lines': pr_data.get('deletions', 0),
+            'changed_files': pr_data.get('changed_files', 0),
+        }
+
+        pull_request.write(update_values)
