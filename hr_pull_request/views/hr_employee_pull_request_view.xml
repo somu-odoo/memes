@@ -41,7 +41,8 @@
         <field name="arch" type="xml">
             <form string="Pull Requests">
                 <header>
-                    <button name="action_update_pr" type="object" string="Update PR"/>
+                    <button name="action_update_pr" type="object" string="Update Pull Request"/>
+                    <button name="action_update_comment" type="object" string="Update Comments"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft, open, closed"/>
                 </header>
                 <sheet>

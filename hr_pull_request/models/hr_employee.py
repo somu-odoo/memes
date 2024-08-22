@@ -30,15 +30,15 @@ class HREmployee(models.Model):
         response = requests.get(request_url, headers=headers)
         if response.status_code != 200:
             return None
-        # print(response.json())
         return response.json()
     
-    def _prepare_pull_request_comments_values(self, comment):
+    def _prepare_pull_request_comments_values(self, comment, pull_request_id):
         return {
             'name': comment.get('body', 'No Comment'),
             'github_comment_id': comment.get('id'),
             'author': comment['user']['login'],
             'comment_date': _convert_date(comment.get('created_at')),
+            'pull_request_id': pull_request_id,
         }
         
     
@@ -57,9 +57,6 @@ class HREmployee(models.Model):
             'files_url': pr_details['pull_request']['url'] + '/files',
             'diff_url':pr_details.get('pull_request').get('diff_url'),
             'pr_url': pr_details.get("url"),
-            # 'added_lines': changes[0],
-            # 'deleted_lines': changes[1],
-            # 'changed_files': changed_files,
         }
         
     def cron_fetch_pr(self):
@@ -75,11 +72,9 @@ class HREmployee(models.Model):
         
     
     def action_fetch_pr(self, with_comments=False):
-        print("Cron job..............")
         url = f"https://api.github.com/search/issues"
         query_type = f"?q=type:pr"
         page_url = f"&per_page=100"
-        # https://api.github.com/search/issues?q=type:pr+author:{user_login}&per_page=100
         values = []
         for record in self.filtered(lambda a: a.allow_fetch_pr and a.github_user):
             query = "+author:{}".format(record.github_user)
@@ -111,11 +106,7 @@ class HREmployee(models.Model):
         for record in records:
             pr_comments_response = self._send_request_github(record.comments_url) or []
             for details in pr_comments_response:
-                value = self._prepare_pull_request_comments_values(details)
-                value.update({
-                    'pull_request_id': record.id,
-            
-                })
+                value = self._prepare_pull_request_comments_values(details, record.id)
                 comments_values.append(value)
         self.env['hr.employee.pull.request.comment'].create(comments_values)
         return 
@@ -139,5 +130,17 @@ class HREmployee(models.Model):
             'deleted_lines': pr_data.get('deletions', 0),
             'changed_files': pr_data.get('changed_files', 0),
         }
-
         pull_request.write(update_values)
+            
+    def update_comments(self, comment_url, pull_request_id):
+        comment_data = self._send_request_github(comment_url)
+        
+        if not comment_data:
+            return
+        for comment in comment_data:
+            old_comment = self.env['hr.employee.pull.request.comment'].search([('github_comment_id', '=', comment.get('id'))])
+            if old_comment:
+                old_comment.write({'name': comment.get('body', 'No Comment')})
+            else:
+                new_comment_data = self._prepare_pull_request_comments_values(comment, pull_request_id)
+                self.env['hr.employee.pull.request.comment'].create(new_comment_data)

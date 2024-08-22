@@ -42,16 +42,18 @@ class EmployeePullRequest(models.Model):
                    ('[FIX]', 'Bug Fix'),
                    ('[ADD]', 'Addition'),
                    ('[REM]', 'Remove'),
-                   ('[REF]', 'Refactor')
+                   ('[REF]', 'Refactor'),
+                   ('[REV]', 'Revert'),
+                   ('unknown', 'Unknown')
                   ], copy=False, compute='_compute_type_title_prefix')
     @api.depends('name')
     def _compute_type_title_prefix(self):
         for record in self:
             if record.name:
                 match = re.match(r'(\[.*?\])', record.name)
-                record.type_title_prefix = match.group(1) if match else ''
+                record.type_title_prefix = match.group(1) if match else 'unknown'
             else:
-                record.type_title_prefix = ''
+                record.type_title_prefix = 'unknown'
 
     def fetch_pull_code_difference(self, pr_files_url):
         added = 0
@@ -77,3 +79,6 @@ class EmployeePullRequest(models.Model):
         
     def action_update_pr(self):
         self.env['hr.employee'].fetch_and_update_pr(self.pr_url)
+    
+    def action_update_comment(self):
+        self.env['hr.employee'].update_comments(self.comments_url, self.id)
