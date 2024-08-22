@@ -7,7 +7,7 @@
     </record>
 
     <record id="ir_cron_fetch_github_pull_requests" model="ir.cron">
-        <field name="name">Fetch GitHub Pull Requests</field>
+        <field name="name">Employee: Fetch GitHub Pull Requests</field>
         <field name="model_id" ref="hr.model_hr_employee"/>
         <field name="state">code</field>
         <field name="code">model.cron_fetch_pr()</field>
@@ -21,7 +21,7 @@
     </record>
 
     <record id="ir_cron_update_pr" model="ir.cron">
-        <field name="name">Update Pull Requests</field>
+        <field name="name">Employee: Update Pull Requests</field>
         <field name="model_id" ref="hr.model_hr_employee"/>
         <field name="state">code</field>
         <field name="code">model.cron_update_all()</field>
@@ -50,16 +50,10 @@
                         <group>
                             <field name="name"/>
                             <field name="author"/>
-                            <!-- <field name="added_lines"/>
-                            <field name="deleted_lines"/> -->
                         </group>
                         <group>
                             <field name="type_title_prefix"/>
                             <field name="diff_url" widget="url"/>
-                            
-                            <!-- <field name="closed_date"/>
-                            <field name="merged_date"/>
-                            <field name="changed_files"/> -->
                         </group>
                     </group>
                     <notebook>

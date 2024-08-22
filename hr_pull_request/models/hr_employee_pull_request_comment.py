@@ -1,7 +1,8 @@
 from odoo import api, fields, models
 import nltk
-nltk.download('vader_lexicon')
 from nltk.sentiment import SentimentIntensityAnalyzer
+nltk.download('vader_lexicon')
+
 
 class EmployeePullRequestComment(models.Model):
     _name = 'hr.employee.pull.request.comment'

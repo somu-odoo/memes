@@ -1,5 +1,4 @@
 import re
-from dateutil import parser
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 import logging
@@ -25,10 +24,10 @@ class EmployeePullRequest(models.Model):
     state = fields.Selection(
         string='state',
         selection=[
-                   ('draft', 'Draft'),
-                   ('open', 'Open'),
-                   ('closed', 'Closed')
-                  ], copy=False, default='open'
+            ('draft', 'Draft'),
+            ('open', 'Open'),
+            ('closed', 'Closed')
+        ], copy=False, default='open'
     )
     pr_url = fields.Char(string="Url for Update")
     files_url = fields.Char(string="Files URL")
@@ -37,21 +36,28 @@ class EmployeePullRequest(models.Model):
     deleted_lines = fields.Char(string="Lines deleted")
     changed_files = fields.Char(string="changed files")
     diff_url = fields.Char(string="Diff URL")
-    type_title_prefix = fields.Selection(string="Type",selection=[
-                   ('[IMP]', 'Improvise'),
-                   ('[FIX]', 'Bug Fix'),
-                   ('[ADD]', 'Addition'),
-                   ('[REM]', 'Remove'),
-                   ('[REF]', 'Refactor'),
-                   ('[REV]', 'Revert'),
-                   ('unknown', 'Unknown')
-                  ], copy=False, compute='_compute_type_title_prefix')
+
+    supported_selection = [
+        ('[IMP]', 'Improvise'),
+        ('[FIX]', 'Bug Fix'),
+        ('[ADD]', 'Addition'),
+        ('[REM]', 'Remove'),
+        ('[REF]', 'Refactor'),
+        ('[REV]', 'Revert'),
+        ('unknown', 'Unknown')
+    ]
+
+    type_title_prefix = fields.Selection(string="Type", selection=supported_selection, copy=False, compute='_compute_type_title_prefix')
     @api.depends('name')
     def _compute_type_title_prefix(self):
         for record in self:
-            if record.name:
-                match = re.match(r'(\[.*?\])', record.name)
-                record.type_title_prefix = match.group(1) if match else 'unknown'
+            suggested_type = re.match(r'(\[.*?\])', record.name)
+            if suggested_type:
+                match = next((x for x in self.supported_selection if x[0] == suggested_type.group(1)), None)
+                if match:
+                    record.type_title_prefix = match[0]
+                else:
+                    record.type_title_prefix = 'unknown'
             else:
                 record.type_title_prefix = 'unknown'
 
@@ -76,9 +82,9 @@ class EmployeePullRequest(models.Model):
                 _logger.error("Error fetching pull request file changes: %s", response.content.decode())
 
         return [added, deleted]
-        
+
     def action_update_pr(self):
-        self.env['hr.employee'].fetch_and_update_pr(self.pr_url)
-    
+        self.env['hr.employee'].fetch_and_update_pr(record=self)
+
     def action_update_comment(self):
         self.env['hr.employee'].update_comments(self.comments_url, self.id)

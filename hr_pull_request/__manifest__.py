@@ -14,7 +14,6 @@
         'views/hr_employee_pull_request_comment_view.xml',
         'views/hr_employee_view.xml',
         'views/hr_employee_pull_request_view.xml',
-        # 'views/github_menus.xml',
     ],
     'installable': True,
     'application': True,
