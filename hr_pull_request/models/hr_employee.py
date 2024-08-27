@@ -77,6 +77,7 @@ class HREmployee(models.Model):
     def cron_update_all(self):
         prs = self.env['hr.employee.pull.request'].search([])
         for pr in prs:
+            print("Intiating Update PR: ", pr.author, pr.pull_request_id)
             self.fetch_and_update_pr(record=pr)
 
     def action_fetch_pr(self, with_comments=False):
@@ -120,9 +121,9 @@ class HREmployee(models.Model):
     @api.model
     def fetch_and_update_pr(self, record):
         pr_data = self._send_request_github(record.pr_url)
-        self.last_sync_date = fields.Date.today()
         if not pr_data:
             return
+        self.last_sync_date = fields.Date.today()
         update_values = {
             'updated_date': _convert_date(pr_data.get('updated_at')),
             'closed_date': _convert_date(pr_data.get('closed_at')),
@@ -132,6 +133,7 @@ class HREmployee(models.Model):
             'comment_count': pr_data['comments'],
         }
         record.write(update_values)
+        print("Updated PR: ", record.author, record.pull_request_id)  # noqa: T201
 
     def update_comments(self, comment_url, pull_request_id):
         comment_data = self._send_request_github(comment_url)
