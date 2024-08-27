@@ -13,7 +13,7 @@ class EmployeePullRequestComment(models.Model):
     github_comment_id = fields.Char(string='GitHub Comment ID')
     pull_request_id = fields.Many2one('hr.employee.pull.request', string='Pull Request')
     author = fields.Char(string="Comment Author")
-    author_id = fields.Many2one("hr.employee","Employee")
+    author_id = fields.Many2one("hr.employee", "Employee")
     sentiment = fields.Selection([
         ('positive', 'Positive'),
         ('neutral', 'Neutral'),

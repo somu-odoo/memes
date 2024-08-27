@@ -20,6 +20,20 @@ class HREmployee(models.Model):
     allow_fetch_pr = fields.Boolean(string="Fetch Pull Request")
     github_user = fields.Char(string="Github Username")
     last_sync_date = fields.Date(string="Last Synchronized date",default=lambda self: date(2023, 1, 1))
+    pull_request_count = fields.Integer(compute="_compute_related_prs")
+
+    def _compute_related_prs(self):
+        for record in self:
+            record.pull_request_count = self.env['hr.employee.pull.request'].search_count([('author', '=', record.github_user)])
+
+    def action_open_related_pr(self):
+        return {
+            'name': 'Pull Requests',
+            'view_mode': 'tree,form',
+            'res_model': 'hr.employee.pull.request',
+            'domain': [('author', '=', self.github_user)],
+            'type': 'ir.actions.act_window',
+        }
 
     def _send_request_github(self, request_url):
         github_token_id = self.env['ir.config_parameter'].sudo().get_param('github_integration.github_api_key')
@@ -88,6 +102,7 @@ class HREmployee(models.Model):
                     'pull_request_id': pr['id'],
                 })
                 values.append(value)
+                print("Added PR: ", pr['id'], record.github_user)  # noqa: T201
             record.last_sync_date = fields.Date.today()
         records = self.env['hr.employee.pull.request'].create(values)
         if not with_comments:

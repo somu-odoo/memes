@@ -15,7 +15,7 @@ class EmployeePullRequest(models.Model):
     comment_id = fields.One2many("hr.employee.pull.request.comment", "pull_request_id", "Comments")
     comment_count = fields.Integer(string='Number of Comments')
     author = fields.Char(string="Employee Name")
-    author_id = fields.Many2one("hr.employee","Employee")
+    author_id = fields.Many2one("hr.employee", "Employee")
     date = fields.Datetime(string="Created at")
     comments_url = fields.Char(string="Comments url")
     updated_date = fields.Datetime(string="Updated at")

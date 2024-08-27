@@ -5,7 +5,7 @@
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="hr.res_config_settings_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//block[@name='integration']" position="inside">
+            <xpath expr="//block[@name='employees_setting_container']" position="inside">
                 <setting id="github_api_key" string="Github API Key" help="Add a Github API key to enable fetch PRs">
                     <field name="github_api_key" placeholder="Paste your API key"/>
                     <button type="object" name="action_check_api_key" string="Test Connection" icon="oi-arrow-right" class="btn-link" invisible="not github_api_key"/>           
