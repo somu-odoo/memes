@@ -36,7 +36,7 @@ class EmployeePullRequest(models.Model):
     deleted_lines = fields.Char(string="Lines deleted")
     changed_files = fields.Char(string="changed files")
     diff_url = fields.Char(string="Diff URL")
-
+    next_sync_date = fields.Datetime(string="Next Sync Date", default=fields.Date.today()) #check this
     supported_selection = [
         ('[IMP]', 'Improvise'),
         ('[FIX]', 'Bug Fix'),

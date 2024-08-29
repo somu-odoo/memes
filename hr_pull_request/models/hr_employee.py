@@ -3,6 +3,7 @@ from odoo.exceptions import UserError
 from datetime import date
 from dateutil import parser
 import requests
+import datetime
 
 
 def _convert_date(date_value):
@@ -75,10 +76,11 @@ class HREmployee(models.Model):
         employees.action_fetch_pr()
 
     def cron_update_all(self):
-        prs = self.env['hr.employee.pull.request'].search([])
+        prs = self.env['hr.employee.pull.request'].search([('state','in', ['draft', 'open']),('next_sync_date','<=', fields.Date.today())], limit=100)
         for pr in prs:
             print("Intiating Update PR: ", pr.author, pr.pull_request_id)
             self.fetch_and_update_pr(record=pr)
+            pr.next_sync_date = fields.Date.today() + datetime.timedelta(days=1)
 
     def action_fetch_pr(self, with_comments=False):
         url = "https://api.github.com/search/issues?q=type:pr"
