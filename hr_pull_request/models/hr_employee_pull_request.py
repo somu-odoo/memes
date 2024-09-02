@@ -17,7 +17,8 @@ class EmployeePullRequest(models.Model):
     author = fields.Char(string="Employee Name")
     author_id = fields.Many2one("hr.employee", "Employee")
     date = fields.Datetime(string="Created at")
-    comments_url = fields.Char(string="Comments url")
+    review_comments_url = fields.Char(string="Review Comments url")
+    issue_comments_url = fields.Char(string="Issue Comments url")
     updated_date = fields.Datetime(string="Updated at")
     closed_date = fields.Datetime(string="Closed at")
     merged_date = fields.Datetime(string="Merged at")
@@ -87,4 +88,4 @@ class EmployeePullRequest(models.Model):
         self.env['hr.employee'].fetch_and_update_pr(record=self)
 
     def action_update_comment(self):
-        self.env['hr.employee'].update_comments(self.comments_url, self.id)
+        self.env['hr.employee'].update_comments(self.issue_comments_url, self.review_comments_url, self.id)

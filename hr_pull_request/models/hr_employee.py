@@ -58,17 +58,19 @@ class HREmployee(models.Model):
 
     def _prepare_pull_request_values(self, pr_details):
         return {
-            'author': pr_details['user']['login'],
-            'date': _convert_date(pr_details.get('created_at')),
-            'updated_date': _convert_date(pr_details.get('updated_at')),
-            'closed_date': _convert_date(pr_details.get('closed_at')),
-            'merged_date': _convert_date(pr_details.get('pull_request').get('merged_at')),
-            'state': 'draft' if pr_details.get('draft') else pr_details.get('state'),
-            'body': pr_details.get('body'),
-            'comments_url': pr_details['pull_request']['url'] + '/comments',
+            'author': pr_details["user"]["login"],
+            'date': _convert_date(pr_details["created_at"]),
+            'updated_date': _convert_date(pr_details["updated_at"]),
+            'closed_date': _convert_date(pr_details["closed_at"]),
+            'comment_count': pr_details["comments"],
+            'merged_date': _convert_date(pr_details["pull_request"]["merged_at"]),
+            'state': 'draft' if pr_details.get('draft') else pr_details["state"],
+            'body': pr_details["body"],
+            'issue_comments_url': pr_details["comments_url"],
+            'review_comments_url': pr_details["pull_request"]["url"] + '/comments',
             'files_url': pr_details['pull_request']['url'] + '/files',
-            'diff_url': pr_details.get('pull_request').get('diff_url'),
-            'pr_url': pr_details.get("url"),
+            'diff_url': pr_details["pull_request"]["diff_url"],
+            'pr_url': pr_details["url"],
         }
 
     def cron_fetch_pr(self):
@@ -76,11 +78,34 @@ class HREmployee(models.Model):
         employees.action_fetch_pr()
 
     def cron_update_all(self):
-        prs = self.env['hr.employee.pull.request'].search([('state','in', ['draft', 'open']),('next_sync_date','<=', fields.Date.today())], limit=100)
-        for pr in prs:
-            print("Intiating Update PR: ", pr.author, pr.pull_request_id)
-            self.fetch_and_update_pr(record=pr)
-            pr.next_sync_date = fields.Date.today() + datetime.timedelta(days=1)
+        batch_size = 100
+        page = 1
+        while True:
+            prs = self.env['hr.employee.pull.request'].search([
+                ('state', 'in', ['draft', 'open']),
+                ('next_sync_date', '<=', fields.Date.today())
+            ], limit=batch_size, offset=(page - 1) * batch_size)
+            if not prs:
+                break
+            for pr in prs:
+                self.fetch_and_update_pr(record=pr)
+                pr.next_sync_date = fields.Date.today() + datetime.timedelta(days=1)
+            page += 1
+
+    def cron_update_comments(self):
+        batch_size = 100
+        page = 1
+        while True:
+            prs = self.env['hr.employee.pull.request'].search([
+                ('state', 'in', ['draft', 'open'])
+            ], limit=batch_size, offset=(page - 1) * batch_size)
+            if not prs:
+                break
+            for pr in prs:
+                self.update_comments(pr.issue_comments_url, pr.review_comments_url, pr.id)
+                pr.next_sync_date = fields.Date.today() + datetime.timedelta(days=1)
+                print('PR Comments Updated: ', pr["id"])
+            page += 1
 
     def action_fetch_pr(self, with_comments=False):
         url = "https://api.github.com/search/issues?q=type:pr"
@@ -111,13 +136,8 @@ class HREmployee(models.Model):
         if not with_comments:
             return
 
-        comments_values = []
         for record in records:
-            pr_comments_response = self._send_request_github(record.comments_url) or []
-            for details in pr_comments_response:
-                value = self._prepare_pull_request_comments_values(details, record.id)
-                comments_values.append(value)
-        self.env['hr.employee.pull.request.comment'].create(comments_values)
+            self.update_comments(record.issue_comments_url, record.review_comments_url, record.id)
         return
 
     @api.model
@@ -137,10 +157,12 @@ class HREmployee(models.Model):
         record.write(update_values)
         print("Updated PR: ", record.author, record.pull_request_id)  # noqa: T201
 
-    def update_comments(self, comment_url, pull_request_id):
-        comment_data = self._send_request_github(comment_url)
-        if not comment_data:
-            return
+    def update_comments(self, issue_comments_url, review_comments_url, pull_request_id):
+        issue_comment_data = self._send_request_github(issue_comments_url) if issue_comments_url else None
+        review_comment_data = self._send_request_github(review_comments_url) if review_comments_url else None
+
+        comment_data = issue_comment_data + review_comment_data
+
         for comment in comment_data:
             old_comment = self.env['hr.employee.pull.request.comment'].search([('github_comment_id', '=', comment.get('id'))])
             if old_comment:
