@@ -7,7 +7,7 @@
             <field name="binding_model_id" ref="hr.model_hr_employee" />
             <field name="state">code</field>
             <field name="code">
-                records.action_fetch_pr()
+                records.async_action_fetch_pr()
             </field>
         </record>
 
@@ -18,7 +18,7 @@
             <field name="binding_model_id" ref="hr.model_hr_employee" />
             <field name="state">code</field>
             <field name="code">
-                records.action_fetch_pr(with_comments=True)
+                records.async_action_fetch_pr(with_comments=True)
             </field>
         </record>
     </data>

@@ -1,9 +1,12 @@
+import asyncio.base_events
 from odoo import fields, models, api
 from odoo.exceptions import UserError
 from datetime import date
 from dateutil import parser
 import requests
 import datetime
+import asyncio
+import aiohttp
 
 
 def _convert_date(date_value):
@@ -75,7 +78,10 @@ class HREmployee(models.Model):
 
     def cron_fetch_pr(self):
         employees = self.search([('allow_fetch_pr', '!=', False), ('github_user', '!=', False)])
-        employees.action_fetch_pr()
+        asyncio.run(employees.action_fetch_pr())
+
+    def async_action_fetch_pr(self, with_comments=False):
+        asyncio.run(self.action_fetch_pr(with_comments=with_comments))
 
     def cron_update_all(self):
         batch_size = 100
@@ -107,37 +113,46 @@ class HREmployee(models.Model):
                 print('PR Comments Updated: ', pr["id"])
             page += 1
 
-    def action_fetch_pr(self, with_comments=False):
-        url = "https://api.github.com/search/issues?q=type:pr"
-        page_url = "&per_page=100"
-        values = []
-        for record in self.filtered(lambda a: a.allow_fetch_pr and a.github_user):
-            query = "+author:{}".format(record.github_user)
-            if record.last_sync_date:
-                query += " created:>{}".format(record.last_sync_date)
-            request_url = "{}{}{}".format(url, query, page_url)
-            result = self._send_request_github(request_url)
-            pull_requests = result.get('items', []) if result else None
-            if not pull_requests:
-                continue
-            for pr in pull_requests:
-                pr_id = self.env['hr.employee.pull.request'].search([('pull_request_id', '=', pr['id'])])
-                if pr_id:
-                    continue
-                value = self._prepare_pull_request_values(pr)
-                value.update({
-                    'name': pr.get('title', 'No Title'),
-                    'pull_request_id': pr['id'],
-                })
-                values.append(value)
-                print("Added PR: ", pr['id'], record.github_user)  # noqa: T201
-            record.last_sync_date = fields.Date.today()
-        records = self.env['hr.employee.pull.request'].create(values)
-        if not with_comments:
-            return
+    async def _fetch_prs(self, session, url):
+        async with session.get(url) as response:
+            return await response.json()
 
-        for record in records:
-            self.update_comments(record.issue_comments_url, record.review_comments_url, record.id)
+    async def action_fetch_pr(self, with_comments=False):
+        base_url = "https://api.github.com/search/issues?q=type:pr"
+        per_page = 100
+        values = []
+
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            for record in self.filtered(lambda a: a.allow_fetch_pr and a.github_user):
+                query = "+author:{}".format(record.github_user)
+                if record.last_sync_date:
+                    query += " created:>{}".format(record.last_sync_date)
+                request_url = "{}{}&per_page={}".format(base_url, query, per_page)
+
+                tasks.append(self._fetch_prs(session, request_url))
+
+            results = await asyncio.gather(*tasks)
+
+            for record, result in zip(self.filtered(lambda a: a.allow_fetch_pr and a.github_user), results):
+                pull_requests = result.get('items', []) if result else []
+                for pr in pull_requests:
+                    if not self.env['hr.employee.pull.request'].search([('pull_request_id', '=', pr['id'])]):
+                        value = self._prepare_pull_request_values(pr)
+                        value.update({
+                            'name': pr.get('title', 'No Title'),
+                            'pull_request_id': pr['id'],
+                        })
+                        values.append(value)
+                        print("Added PR: ", pr['id'], record.github_user)  # noqa: T201
+                record.last_sync_date = fields.Date.today()
+
+            if values:
+                records = self.env['hr.employee.pull.request'].create(values)
+                print('PR added successfully ', records)
+                if with_comments:
+                    for record in records:
+                        self.update_comments(record.issue_comments_url, record.review_comments_url, record.id)
         return
 
     @api.model
@@ -170,6 +185,9 @@ class HREmployee(models.Model):
                     'name': comment.get('body', 'No Comment'),
                     'pull_request_id': pull_request_id
                 })
+                print("Modified Comments: ", pull_request_id)
             else:
                 new_comment_data = self._prepare_pull_request_comments_values(comment, pull_request_id)
                 self.env['hr.employee.pull.request.comment'].create(new_comment_data)
+                print("Added new comments: ", pull_request_id)
+        return
