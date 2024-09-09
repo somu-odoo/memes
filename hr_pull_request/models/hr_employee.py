@@ -44,7 +44,7 @@ class HREmployee(models.Model):
         github_token_id = self.env['ir.config_parameter'].sudo().get_param('github_integration.github_api_key')
         if not github_token_id:
             raise UserError("Enter a Github API key")
-        headers = {'Authorization': f'token {github_token_id}'}
+        headers = {'Authorization': f'token {github_token_id}', 'User-Agent': 'request'}
 
         response = requests.get(request_url, headers=headers)
         if response.status_code != 200:
