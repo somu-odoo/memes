@@ -1,12 +1,13 @@
-import asyncio.base_events
+from datetime import datetime, timedelta
+from dateutil import parser
 from odoo import fields, models, api
 from odoo.exceptions import UserError
-from datetime import date
-from dateutil import parser
-import requests
-import datetime
-import asyncio
 import aiohttp
+import asyncio
+import asyncio.base_events
+import logging
+import requests
+_logger = logging.getLogger(__name__)
 
 
 def _convert_date(date_value):
@@ -23,7 +24,7 @@ class HREmployee(models.Model):
 
     allow_fetch_pr = fields.Boolean(string="Fetch Pull Request")
     github_user = fields.Char(string="Github Username")
-    last_sync_date = fields.Date(string="Last Synchronized date",default=lambda self: date(2023, 1, 1))
+    last_sync_date = fields.Datetime(string="Last Synchronized", default=lambda self: datetime(2023, 1, 1, 0, 0, 0))
     pull_request_count = fields.Integer(compute="_compute_related_prs")
 
     def _compute_related_prs(self):
@@ -89,33 +90,53 @@ class HREmployee(models.Model):
         while True:
             prs = self.env['hr.employee.pull.request'].search([
                 ('state', 'in', ['draft', 'open']),
-                ('next_sync_date', '<=', fields.Date.today())
+                ('next_sync_date', '<=', datetime.now())
             ], limit=batch_size, offset=(page - 1) * batch_size)
             if not prs:
                 break
             for pr in prs:
                 self.fetch_and_update_pr(record=pr)
-                pr.next_sync_date = fields.Date.today() + datetime.timedelta(days=1)
+                pr.next_sync_date = fields.Date.today() + timedelta(days=1)
             page += 1
 
     def cron_update_comments(self):
         batch_size = 100
         page = 1
         while True:
+            offset = (page - 1) * batch_size
             prs = self.env['hr.employee.pull.request'].search([
                 ('state', 'in', ['draft', 'open'])
-            ], limit=batch_size, offset=(page - 1) * batch_size)
+            ], limit=batch_size, offset=offset)
             if not prs:
                 break
             for pr in prs:
                 self.update_comments(pr.issue_comments_url, pr.review_comments_url, pr.id)
-                pr.next_sync_date = fields.Date.today() + datetime.timedelta(days=1)
-                print('PR Comments Updated: ', pr["id"])
+                pr.next_sync_date = fields.Date.today() + timedelta(days=1)
+                _logger.info('PR Comments Updated: "%s"', pr["id"])
             page += 1
 
-    async def _fetch_prs(self, session, url):
-        async with session.get(url) as response:
-            return await response.json()
+
+    async def _fetch_prs(self, session, url, per_page=100):
+        """Fetch all pages of PRs"""
+        all_results = []
+        page = 1
+
+        while True:
+            paginated_url = f"{url}&page={page}&per_page={per_page}"
+            async with session.get(paginated_url) as response:
+                if response.status != 200:
+                    _logger.error('Error fetching PRs: %s', response.status)
+                    break
+
+                result = await response.json()
+                all_results.append(result)
+                if 'items' not in result or len(result['items']) < per_page:
+                    break
+
+                # page += 1  # Move to the next page
+
+        return all_results
+
 
     async def action_fetch_pr(self, with_comments=False):
         base_url = "https://api.github.com/search/issues?q=type:pr"
@@ -127,15 +148,21 @@ class HREmployee(models.Model):
             for record in self.filtered(lambda a: a.allow_fetch_pr and a.github_user):
                 query = "+author:{}".format(record.github_user)
                 if record.last_sync_date:
-                    query += " created:>{}".format(record.last_sync_date)
-                request_url = "{}{}&per_page={}".format(base_url, query, per_page)
+                    query += " created:>{}".format((record.last_sync_date).strftime('%Y-%m-%dT%H:%M:%SZ'))
+                request_url = "{}{}".format(base_url, query)
 
-                tasks.append(self._fetch_prs(session, request_url))
+                # Fetch pull requests asynchronously, now using pagination
+                tasks.append(self._fetch_prs(session, request_url, per_page))
 
             results = await asyncio.gather(*tasks)
 
-            for record, result in zip(self.filtered(lambda a: a.allow_fetch_pr and a.github_user), results):
-                pull_requests = result.get('items', []) if result else []
+            for record, result_list in zip(self.filtered(lambda a: a.allow_fetch_pr and a.github_user), results):
+                pull_requests = []
+                # Combine all pages into a single list of PRs
+                for result in result_list:
+                    pull_requests.extend(result.get('items', []) if result else [])
+
+                # Process each pull request
                 for pr in pull_requests:
                     if not self.env['hr.employee.pull.request'].search([('pull_request_id', '=', pr['id'])]):
                         value = self._prepare_pull_request_values(pr)
@@ -144,23 +171,28 @@ class HREmployee(models.Model):
                             'pull_request_id': pr['id'],
                         })
                         values.append(value)
-                        print("Added PR: ", pr['id'], record.github_user)  # noqa: T201
-                record.last_sync_date = fields.Date.today()
+                        _logger.info('Added PR: "%s" - "%s"', pr['id'], record.github_user)
+
+                record.last_sync_date = fields.Datetime.now()
 
             if values:
                 records = self.env['hr.employee.pull.request'].create(values)
-                print('PR added successfully ', records)
+                _logger.info('PR added successfully: "%s"', records)
+
+                # Optionally fetch comments for each PR
                 if with_comments:
                     for record in records:
                         self.update_comments(record.issue_comments_url, record.review_comments_url, record.id)
+
         return
+
 
     @api.model
     def fetch_and_update_pr(self, record):
         pr_data = self._send_request_github(record.pr_url)
         if not pr_data:
             return
-        self.last_sync_date = fields.Date.today()
+        self.last_sync_date = fields.Datetime.now()
         update_values = {
             'updated_date': _convert_date(pr_data.get('updated_at')),
             'closed_date': _convert_date(pr_data.get('closed_at')),
@@ -170,7 +202,7 @@ class HREmployee(models.Model):
             'comment_count': pr_data['comments'],
         }
         record.write(update_values)
-        print("Updated PR: ", record.author, record.pull_request_id)  # noqa: T201
+        _logger.info('Updated PR: "%s" - "%s"', record.author, record.pull_request_id)
 
     def update_comments(self, issue_comments_url, review_comments_url, pull_request_id):
         issue_comment_data = self._send_request_github(issue_comments_url) if issue_comments_url else None
@@ -185,9 +217,9 @@ class HREmployee(models.Model):
                     'name': comment.get('body', 'No Comment'),
                     'pull_request_id': pull_request_id
                 })
-                print("Modified Comments: ", pull_request_id)
+                _logger.info('Modified Comments: "%s" - "%s"',old_comment["id"], pull_request_id)
             else:
                 new_comment_data = self._prepare_pull_request_comments_values(comment, pull_request_id)
                 self.env['hr.employee.pull.request.comment'].create(new_comment_data)
-                print("Added new comments: ", pull_request_id)
+                _logger.info('Added new comments: "%s"', pull_request_id)
         return
