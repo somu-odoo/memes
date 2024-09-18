@@ -15,6 +15,7 @@
                 <field name="comment_date" string="Creation Date"/>
                 <field name="author"/>
                 <field name="sentiment" string="Sentiment"/>
+                <field name="sentiment_score" string="Score" optional="hide"/>
             </tree>
         </field>
     </record>

@@ -7,18 +7,17 @@
             <field name="binding_model_id" ref="hr.model_hr_employee" />
             <field name="state">code</field>
             <field name="code">
-                records.async_action_fetch_pr()
+                records.asyncio_action_fetch_pr()
             </field>
         </record>
-
-        <record id="action_fetch_pr_with_comment_list" model="ir.actions.server">
-            <field name="name">Fetch PRs with comments</field>
+        <record id="action_update_pr_list" model="ir.actions.server">
+            <field name="name">Update PRs</field>
             <field name="type">ir.actions.server</field>
-            <field name="model_id" ref="hr.model_hr_employee" />
-            <field name="binding_model_id" ref="hr.model_hr_employee" />
+            <field name="model_id" ref="hr_pull_request.model_hr_employee_pull_request" />
+            <field name="binding_model_id" ref="hr_pull_request.model_hr_employee_pull_request" />
             <field name="state">code</field>
             <field name="code">
-                records.async_action_fetch_pr(with_comments=True)
+                records.action_update_pr()
             </field>
         </record>
     </data>

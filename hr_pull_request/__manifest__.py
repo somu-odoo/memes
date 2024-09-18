@@ -1,7 +1,7 @@
 {
     'name': 'Pull Request Stats',
     'version': '1.0',
-    'category': 'github_pull_requests',
+    'category': 'Human Resources/HR Pull Requests',
     'summary': 'Fetch and display GitHub data',
     'description': """Fetch and display GitHub data like pull requests, commits, and comments on employee profiles""",
     'author': 'Sourabh Parihar',

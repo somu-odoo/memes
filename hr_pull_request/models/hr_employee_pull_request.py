@@ -1,6 +1,5 @@
 import re
 from odoo import api, fields, models
-from odoo.exceptions import UserError
 import logging
 import requests
 _logger = logging.getLogger(__name__)
@@ -13,9 +12,7 @@ class EmployeePullRequest(models.Model):
     name = fields.Char(string='Title', required=True)
     pull_request_id = fields.Char(string='Pull Request ID')
     comment_id = fields.One2many("hr.employee.pull.request.comment", "pull_request_id", "Comments")
-    comment_count = fields.Integer(string='Number of Comments')
     author = fields.Char(string="Employee Name")
-    author_id = fields.Many2one("hr.employee", "Employee")
     date = fields.Datetime(string="Created at")
     review_comments_url = fields.Char(string="Review Comments url")
     issue_comments_url = fields.Char(string="Issue Comments url")
@@ -23,7 +20,7 @@ class EmployeePullRequest(models.Model):
     closed_date = fields.Datetime(string="Closed at")
     merged_date = fields.Datetime(string="Merged at")
     state = fields.Selection(
-        string='state',
+        string='State',
         selection=[
             ('draft', 'Draft'),
             ('open', 'Open'),
@@ -39,22 +36,43 @@ class EmployeePullRequest(models.Model):
     diff_url = fields.Char(string="Diff URL")
     next_sync_date = fields.Datetime(string="Next Sync Date", default=lambda self: fields.Datetime.now())
     supported_selection = [
-        ('[IMP]', 'Improvise'),
-        ('[FIX]', 'Bug Fix'),
-        ('[ADD]', 'Addition'),
-        ('[REM]', 'Remove'),
-        ('[REF]', 'Refactor'),
-        ('[REV]', 'Revert'),
+        ('imp', 'Improvise'),
+        ('fix', 'Bug Fix'),
+        ('add', 'Addition'),
+        ('rem', 'Remove'),
+        ('ref', 'Refactor'),
+        ('rev', 'Revert'),
+        ('draft', 'Draft'),
         ('unknown', 'Unknown')
     ]
+    rating = fields.Integer("Rating")
+    sentiment_rating = fields.Char("Avg. Sentiment Rating", readonly=True, compute='_compute_avg_sentiment_rating')
+    type_title_prefix = fields.Selection(string="Type", selection=supported_selection, copy=False, compute='_compute_type_title_prefix', store=True)
 
-    type_title_prefix = fields.Selection(string="Type", selection=supported_selection, copy=False, compute='_compute_type_title_prefix')
+    def _compute_avg_sentiment_rating(self):
+        for record in self:
+            if record.comment_id:
+                valid_scores = [x.sentiment_score * 100 for x in record.comment_id if x.sentiment_score is not None]
+                if valid_scores:
+                    avg_score = round(sum(valid_scores) / len(valid_scores), 2)
+                else:
+                    avg_score = 0
+            else:
+                avg_score = 0
+            verdict = 'Neutral' if avg_score == 0 else ('Positive' if avg_score > 0 else 'Negative')
+            record.sentiment_rating = f"{verdict} ({avg_score})"
+
     @api.depends('name')
     def _compute_type_title_prefix(self):
         for record in self:
-            suggested_type = re.match(r'(\[.*?\])', record.name)
-            if suggested_type:
-                match = next((x for x in self.supported_selection if x[0] == suggested_type.group(1)), None)
+            matches = re.findall(r'\[([^\[\]]+)\]', record.name)
+            if matches:
+                first_match = matches[0].lower()
+                if first_match == 'draft' and len(matches) > 1:
+                    next_match = matches[1].lower()
+                    match = next((item for item in self.supported_selection if item[0] == next_match), None)
+                else:
+                    match = next((item for item in self.supported_selection if item[0] == first_match), None)
                 if match:
                     record.type_title_prefix = match[0]
                 else:
@@ -85,7 +103,8 @@ class EmployeePullRequest(models.Model):
         return [added, deleted]
 
     def action_update_pr(self):
-        self.env['hr.employee'].fetch_and_update_pr(record=self)
+        for record in self:
+            self.env['hr.employee'].sudo().asyncio_fetch_and_update_pr(record=record)
 
     def action_update_comment(self):
-        self.env['hr.employee'].update_comments(self.issue_comments_url, self.review_comments_url, self.id)
+        self.env['hr.employee'].sudo().asyncio_update_comments(self.issue_comments_url, self.review_comments_url, self.id)

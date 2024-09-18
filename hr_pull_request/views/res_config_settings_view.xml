@@ -8,7 +8,11 @@
             <xpath expr="//block[@name='employees_setting_container']" position="inside">
                 <setting id="github_api_key" string="Github API Key" help="Add a Github API key to enable fetch PRs">
                     <field name="github_api_key" placeholder="Paste your API key"/>
-                    <button type="object" name="action_check_api_key" string="Test Connection" icon="oi-arrow-right" class="btn-link" invisible="not github_api_key"/>           
+                    <button type="object" name="asyncio_action_check_api_key" string="Test Connection" icon="oi-arrow-right" class="btn-link" invisible="not github_api_key"/>
+                    <br/>
+                    <div class="mt8">
+                        <button name="asyncio_action_fetch_pr_lifetime" icon="oi-arrow-right" type="object" string="Fetch PRs (2023-01-01)" class="btn-link"/>
+                    </div>         
                 </setting>
             </xpath>
         </field>
