@@ -22,6 +22,7 @@ class EmployeePullRequestComment(models.Model):
 
     @api.depends('name')
     def _compute_sentiment(self):
+        self = self.sudo()
         sia = SentimentIntensityAnalyzer()
         for record in self:
             record.sentiment = 'neutral'

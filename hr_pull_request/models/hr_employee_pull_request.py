@@ -50,6 +50,7 @@ class EmployeePullRequest(models.Model):
     type_title_prefix = fields.Selection(string="Type", selection=supported_selection, copy=False, compute='_compute_type_title_prefix', store=True)
 
     def _compute_avg_sentiment_rating(self):
+        self = self.sudo()
         for record in self:
             if record.comment_id:
                 valid_scores = [x.sentiment_score * 100 for x in record.comment_id if x.sentiment_score is not None]
