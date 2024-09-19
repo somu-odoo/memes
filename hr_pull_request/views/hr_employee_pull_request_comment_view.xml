@@ -10,7 +10,7 @@
         <field name="name">hr.employee.pull.request.comment.tree</field>
         <field name="model">hr.employee.pull.request.comment</field>
         <field name="arch" type="xml">
-            <tree string="GitHub Comments" edit="false" decoration-success="sentiment in ['positive']" decoration-warning="sentiment in ['negative']">
+            <tree string="GitHub Comments" edit="0" create="0" decoration-success="sentiment in ['positive']" decoration-warning="sentiment in ['negative']">
                 <field name="name" string="Comment"/>
                 <field name="comment_date" string="Creation Date"/>
                 <field name="author"/>

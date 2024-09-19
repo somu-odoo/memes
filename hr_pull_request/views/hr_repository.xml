@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="action_hr_repository" model="ir.actions.act_window">
+        <field name="name">Repositories</field>
+        <field name="res_model">hr.repository</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_hr_repository_form" model="ir.ui.view">
+        <field name="name">view.hr.repository.form</field>
+        <field name="model">hr.repository</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="full_name"/>
+                            <field name="access_key"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_hr_repository_list" model="ir.ui.view">
+        <field name="name">view.hr.repository.list</field>
+        <field name="model">hr.repository</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="full_name"/>
+            </tree>
+        </field>
+    </record>
+
+    
+    <menuitem
+        id="menu_github_repo"
+        action="action_hr_repository"
+        parent="menu_config_github"
+        sequence="4"
+        groups="hr_pull_request.group_manager"/>
+</odoo>
