@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="product_check_pincode" name='Check pincode' inherit_id="website_sale.product" priority="8">
+        <xpath expr="//div[@id='o_wsale_cta_wrapper']" position="after">
+            <div class="d-inline-flex">
+                <input type="number" id="pincode" name="pincode" class="form-control" placeholder="Enter pincode"/>
+                <button type="button" id="check-pincode" class="btn btn-primary o_check_pincode" disabled="true">Check</button>
+            </div>
+            <p id="pincode-result"></p>
+        </xpath>
+    </template>
+
+    <template id="product_rating_card" inherit_id="website_sale.products_item" name="Product Rating">
+        <xpath expr="//*[hasclass('o_wsale_products_item_title')]" position="inside">
+            <div t-if="product.website_published">
+                <i class="fa fa-star"/>
+                <span t-out="product.rating_avg"/>
+            </div>
+        </xpath>
+        <xpath expr="//*[hasclass('o_wsale_products_item_title')]" position="attributes">
+            <attribute name="class" add="d-flex justify-content-between" separator=" "/>
+        </xpath>
+    </template>
+</odoo>

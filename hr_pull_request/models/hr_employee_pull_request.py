@@ -49,6 +49,7 @@ class EmployeePullRequest(models.Model):
     sentiment_rating = fields.Char("Avg. Sentiment Rating", readonly=True, compute='_compute_avg_sentiment_rating')
     type_title_prefix = fields.Selection(string="Type", selection=supported_selection, copy=False, compute='_compute_type_title_prefix', store=True)
 
+    @api.depends('comment_id')
     def _compute_avg_sentiment_rating(self):
         self = self.sudo()
         for record in self:
