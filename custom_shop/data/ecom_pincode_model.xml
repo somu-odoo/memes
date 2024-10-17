@@ -1,0 +1,23 @@
+<odoo>
+    <data>
+        <record id="model_x_ecom_pincode" model="ir.model">
+            <field name="name">ecom.pincode</field>
+            <field name="model">x_ecom.pincode</field>
+        </record>
+
+        <record id="field_model_ecom_pincode__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="custom_shop.model_x_ecom_pincode"/>
+            <field name="ttype">integer</field>
+            <field name="field_description">Pincode</field>
+        </record>
+
+        <record id="field_model_product_public_category__x_supported_pincodes" model="ir.model.fields">
+            <field name="name">x_supported_pincodes</field>
+            <field name="model_id" ref="website_sale.model_product_public_category"/>
+            <field name="field_description">Supported Pincodes</field>
+            <field name="ttype">many2many</field>
+            <field name="relation">x_ecom.pincode</field>
+        </record>
+    </data>
+</odoo>

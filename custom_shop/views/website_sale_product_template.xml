@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="product_check_pincode" name='Check pincode' inherit_id="website_sale.product" priority="8">
+        <xpath expr="//div[@id='o_wsale_cta_wrapper']" position="after">
+            <div class="d-inline-flex">
+                <input type="number" id="pincode" name="pincode" class="form-control" placeholder="Enter pincode"/>
+                <button type="button" id="check-pincode" class="btn btn-primary o_check_pincode" disabled="true">Check</button>
+            </div>
+            <p id="pincode-result"></p>
+            <script>
+                const pin = localStorage.getItem("odoo-pincode");
+                const user_id = localStorage.getItem("odoo-userId");
+                if (pin) {
+                    document.querySelector('#pincode').value = pin;
+                    const checkPincodeButton = document.querySelector('#check-pincode');
+                    checkPincodeButton.disabled = false;
+                    if(user_id) {
+                        setTimeout(function() {checkPincodeButton.click()}, 50);
+                    }
+                }
+            </script>
+        </xpath>
+    </template>
+
+    <template id="product_rating_card" inherit_id="website_sale.products_item" name="Product Rating">
+        <xpath expr="//*[hasclass('o_wsale_products_item_title')]" position="inside">
+            <div t-if="product.website_published">
+                <t t-call="portal_rating.rating_widget_stars_static">
+                    <t t-set="rating_avg" t-value="product.rating_avg"/>
+                    <t t-set="rating_count" t-value="product.rating_count"/>
+                </t>
+            </div>
+        </xpath>
+    </template>
+</odoo>

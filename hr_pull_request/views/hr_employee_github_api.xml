@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="action_hr_employee_github_api" model="ir.actions.act_window">
+        <field name="name">Github APIs</field>
+        <field name="res_model">hr.employee.github.api</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="view_hr_employee_github_api_form" model="ir.ui.view">
+        <field name="name">hr.employee.github.api.form</field>
+        <field name="model">hr.employee.github.api</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_fetch_repos" type="object" string="Fetch Repos" groups="hr_pull_request.group_manager"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="github_api_key"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Repositories">
+                            <field name="repo_ids"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_config_github"
+        name="Github PR"
+        parent="hr.menu_human_resources_configuration"
+        groups="hr_pull_request.group_manager"
+        sequence="5"/>
+
+        <menuitem
+            id="menu_github_api"
+            action="action_hr_employee_github_api"
+            parent="menu_config_github"
+            sequence="4"
+            groups="hr_pull_request.group_manager"/>
+
+</odoo>

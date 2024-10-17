@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_public_category_form_view" model="ir.ui.view">
+        <field name="name">product.public.category.form.inherit.custom.shop</field>
+        <field name="model">product.public.category</field>
+        <field name="inherit_id" ref="website_sale.product_public_category_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='parent_id']" position="after">
+                <field name="x_supported_pincodes" widget="many2many_tags"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="x_ecom_pincode_list_view" model="ir.ui.view">
+        <field name="name">x.ecom.pincode.list.view</field>
+        <field name="model">x_ecom.pincode</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="x_name"/>
+            </tree>
+        </field>
+    </record>
+</odoo>

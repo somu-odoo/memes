@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_x_ecom_pincode_user,access_x_ecom_pincode_user,model_x_ecom_pincode,base.group_user,1,1,1,1
+access_x_ecom_pincode_portal,access_x_ecom_pincode_portal,model_x_ecom_pincode,base.group_portal,1,0,0,0
+access_x_ecom_pincode_public,access_x_ecom_pincode_public,model_x_ecom_pincode,base.group_public,1,0,0,0
